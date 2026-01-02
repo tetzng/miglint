@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	migratePattern    = regexp.MustCompile(`^([0-9]+)_(.*)\.(up|down)\.(.+)$`)
-	migrationLikeRe   = regexp.MustCompile(`^[0-9]+_.*\.(up|down)\..+`)
-	migrationPrefixRe = regexp.MustCompile(`^([0-9]+)_(.*)\.(up|down)(?:\.(.*))?$`)
+	migratePattern    = regexp.MustCompile(`^([0-9]+)_(.+)\.(up|down)\.(.+)$`)
+	migrationLikeRe   = regexp.MustCompile(`^[0-9]+_.+\.(up|down)\..+`)
+	migrationPrefixRe = regexp.MustCompile(`^([0-9]+)_(.+)\.(up|down)(?:\.(.*))?$`)
 )
 
 // Config represents lint options.
@@ -68,13 +68,25 @@ func Lint(cfg Config) ([]string, error) {
 			// Only files directly under the specified path are considered.
 			continue
 		}
-		if entry.Type()&os.ModeType != 0 {
-			// Skip non-regular files (symlink/device/etc.).
-			continue
-		}
 
 		name := entry.Name()
 		fullPath := filepath.Join(cfg.Path, name)
+		if entry.Type()&os.ModeType != 0 {
+			if entry.Type()&os.ModeSymlink == 0 {
+				// Skip non-regular files (device/etc.).
+				continue
+			}
+			info, err := os.Stat(fullPath)
+			if err != nil {
+				lintErrors = append(lintErrors, fmt.Sprintf("failed to stat symlink: %s: %v", fullPath, err))
+				continue
+			}
+			if !info.Mode().IsRegular() {
+				// Skip symlinks to non-regular files.
+				continue
+			}
+		}
+
 		finalExt := finalExtension(name)
 		prefixMatch := migrationPrefixRe.FindStringSubmatch(name)
 		extPartOpt := ""

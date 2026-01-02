@@ -44,6 +44,23 @@ func TestCLI_ExtLessReportedWithStrictPattern(t *testing.T) {
 	_ = stdout
 }
 
+func TestCLI_ExtLeadingDotAccepted(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "000001_create.up.sql", "")
+	write(t, dir, "000001_create.down.sql", "")
+
+	stdout, stderr, code := runCli(t, "-path", dir, "-ext", ".sql", "-enforce-ext")
+	if code != 0 {
+		t.Fatalf("expected exit 0, got %d (stdout=%q, stderr=%q)", code, stdout, stderr)
+	}
+	if !strings.Contains(stdout, "migration lint passed") {
+		t.Fatalf("expected success message, got stdout=%q", stdout)
+	}
+	if stderr != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+}
+
 func runCli(t *testing.T, args ...string) (stdout, stderr string, code int) {
 	t.Helper()
 	cmd := exec.Command("go", append([]string{"run", "./cmd/miglint"}, args...)...)

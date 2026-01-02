@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/tetzng/miglint/internal/lint"
 )
@@ -51,6 +52,10 @@ func parseFlags() (*lint.Config, int) {
 	}
 
 	flag.Parse()
+
+	if cfg.Ext != "" {
+		cfg.Ext = strings.TrimPrefix(cfg.Ext, ".")
+	}
 
 	if cfg.Path == "" {
 		fmt.Fprintln(os.Stderr, "error: -path is required")

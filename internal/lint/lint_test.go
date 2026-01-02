@@ -184,6 +184,39 @@ func TestExtLessUpDownFlaggedWithStrictPattern(t *testing.T) {
 	assertAnyContains(t, errs, "unmatched file")
 }
 
+func TestEmptyNameRejectedWithStrictPattern(t *testing.T) {
+	dir := t.TempDir()
+	touch(t, dir, "000001_.up.sql")
+
+	cfg := Config{Path: dir, StrictPattern: true}
+	errs, err := Lint(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	assertAnyContains(t, errs, "unmatched file")
+}
+
+func TestSymlinkedMigrationIsProcessed(t *testing.T) {
+	dir := t.TempDir()
+	targetDir := t.TempDir()
+	target := filepath.Join(targetDir, "target.sql")
+	if err := os.WriteFile(target, []byte(""), 0o644); err != nil {
+		t.Fatalf("write target %s: %v", target, err)
+	}
+
+	link := filepath.Join(dir, "000001_symlink.up.sql")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symlink not supported: %v", err)
+	}
+
+	cfg := Config{Path: dir, RequireDown: true}
+	errs, err := Lint(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	assertAnyContains(t, errs, "missing down migration for version 1")
+}
+
 func touch(t *testing.T, dir, name string) {
 	t.Helper()
 	path := filepath.Join(dir, name)

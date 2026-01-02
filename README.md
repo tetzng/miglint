@@ -18,13 +18,16 @@ Required:
 - `-path` : directory containing migration files
 
 Optional flags:
-- `-ext` : extension filter; match final ext (`sql`) or full ext part (`sql.gz`)
+- `-ext` : extension filter; match final ext (`sql`) or full ext part (`sql.gz`) (leading dot is allowed, e.g. `.sql`)
 - `-enforce-ext` (default: false) : with `-ext`, treat migration-like files (incl. `.up`/`.down` without ext) whose extension differs as errors
 - `-no-gaps` (default: false) : require contiguous version numbers
 - `-digits` (default: 0) : fix VERSION width; 0 disables the check
 - `-require-down` (default: false) : require both up and down for every version
 - `-strict-name-match` (default: false) : require NAME and ExtPart to match between up/down of the same version
 - `-strict-pattern` (default: false) : error on candidate files (numeric/migration-like, incl. `.up`/`.down` without ext) that don’t match the migrate pattern
+
+Notes:
+- Symlinked files are linted if they point to regular files.
 
 ## Examples
 
