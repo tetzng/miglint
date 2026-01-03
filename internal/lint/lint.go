@@ -58,6 +58,9 @@ func Lint(cfg Config) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read path: %v", err)
 	}
+	sort.SliceStable(entries, func(i, j int) bool {
+		return entries[i].Name() < entries[j].Name()
+	})
 
 	var lintErrors []string
 	versions := make(map[int64]*VersionGroup)
@@ -295,5 +298,6 @@ func joinPaths(ms []*Migration) string {
 	for i, m := range ms {
 		paths[i] = m.Path
 	}
+	sort.Strings(paths)
 	return strings.Join(paths, ", ")
 }

@@ -217,6 +217,34 @@ func TestSymlinkedMigrationIsProcessed(t *testing.T) {
 	assertAnyContains(t, errs, "missing down migration for version 1")
 }
 
+func TestDuplicateUpErrorIsSorted(t *testing.T) {
+	dir := t.TempDir()
+	touch(t, dir, "000002_b.up.sql")
+	touch(t, dir, "000002_a.up.sql")
+
+	cfg := Config{Path: dir}
+	errs, err := Lint(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	msg, ok := findContains(errs, "duplicate up migrations for version 2")
+	if !ok {
+		t.Fatalf("expected duplicate up error, got %v", errs)
+	}
+
+	pathA := filepath.Join(dir, "000002_a.up.sql")
+	pathB := filepath.Join(dir, "000002_b.up.sql")
+	idxA := strings.Index(msg, pathA)
+	idxB := strings.Index(msg, pathB)
+	if idxA == -1 || idxB == -1 {
+		t.Fatalf("expected message to contain both paths: %q", msg)
+	}
+	if idxA > idxB {
+		t.Fatalf("expected paths to be sorted: %q", msg)
+	}
+}
+
 func touch(t *testing.T, dir, name string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
@@ -230,6 +258,15 @@ func assertAnyContains(t *testing.T, arr []string, substr string) {
 	if !anyContains(arr, substr) {
 		t.Fatalf("expected any string to contain %q, got %v", substr, arr)
 	}
+}
+
+func findContains(arr []string, substr string) (string, bool) {
+	for _, s := range arr {
+		if strings.Contains(s, substr) {
+			return s, true
+		}
+	}
+	return "", false
 }
 
 func anyContains(arr []string, substr string) bool {
